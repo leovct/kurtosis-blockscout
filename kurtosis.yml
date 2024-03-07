@@ -1,0 +1,4 @@
+---
+name: github.com/leovct/kurtosis-blockscout
+description: |
+  A Kurtosis package that deploys a local Blockscout explorer
