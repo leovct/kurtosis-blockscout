@@ -7,7 +7,7 @@ POSTGRES_DB = "blockscout"
 
 
 def run(plan, rpc_http_url, rpc_ws_url=""):
-    postgres_url = postgres.start_postgres(plan)
+    postgres_url = start_postgres(plan)
     backend_host = start_blockscout_backend(
         plan, rpc_http_url, rpc_ws_url, postgres_url
     )
