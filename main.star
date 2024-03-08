@@ -13,9 +13,9 @@ def run(plan, rpc_http_url, rpc_ws_url=""):
     )
 
     # TODO: Start blockscout microservices
-    #start_blockscout_sc_visualizer(plan)
-    #start_blockscout_sig_provider(plan)
-    #start_blockscout_sc_verifier(plan)
+    # start_blockscout_sc_visualizer(plan)
+    # start_blockscout_sig_provider(plan)
+    # start_blockscout_sc_verifier(plan)
 
     start_blockscout_frontend(plan, backend_host, rpc_http_url)
 
@@ -29,14 +29,14 @@ def start_postgres(plan):
         password=POSTGRES_PASSWORD,
         database=POSTGRES_DB,
         extra_configs=["max_connections=1000"],
-        persistent=True
+        persistent=True,
     )
     return "postgresql://{user}:{password}@{hostname}:{port}/{database}".format(
         user=POSTGRES_USER,
         password=POSTGRES_PASSWORD,
         hostname=postgres_output.service.hostname,
         port=postgres_output.port.number,
-        database=POSTGRES_DB
+        database=POSTGRES_DB,
     )
 
 
@@ -75,9 +75,9 @@ def start_blockscout_sc_visualizer(plan):
         name="blockscout-sc-visualizer",
         config=ServiceConfig(
             image="ghcr.io/blockscout/visualizer:latest",
-            #ports={
+            # ports={
             #    "sc-visualizer": PortSpec(8081, application_protocol="http"),
-            #},
+            # },
         ),
     )
 
@@ -87,9 +87,9 @@ def start_blockscout_sig_provider(plan):
         name="blockscout-sig-provider",
         config=ServiceConfig(
             image="ghcr.io/blockscout/sig-provider:latest",
-            #ports={
+            # ports={
             #    "sig-provider": PortSpec(8083, application_protocol="http"),
-            #},
+            # },
         ),
     )
 
@@ -99,9 +99,9 @@ def start_blockscout_sc_verifier(plan):
         name="blockscout-sc-verifier",
         config=ServiceConfig(
             image="ghcr.io/blockscout/smart-contract-verifier:latest",
-            #ports={
+            # ports={
             #    "sc-verifier": PortSpec(8082, application_protocol="http"),
-            #},
+            # },
         ),
     )
 
