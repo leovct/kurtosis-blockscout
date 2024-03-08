@@ -1,4 +1,9 @@
-postgres = import_module("./postgres.star")
+postgres = import_module("github.com/kurtosis-tech/postgres-package/main.star")
+
+POSTGRES_IMAGE = "postgres:14-alpine"
+POSTGRES_USER = "blockscout"
+POSTGRES_PASSWORD = "password"
+POSTGRES_DB = "blockscout"
 
 
 def run(plan, rpc_http_url, rpc_ws_url=""):
@@ -13,6 +18,26 @@ def run(plan, rpc_http_url, rpc_ws_url=""):
     #start_blockscout_sc_verifier(plan)
 
     start_blockscout_frontend(plan, backend_host, rpc_http_url)
+
+
+def start_postgres(plan):
+    postgres_output = postgres.run(
+        plan,
+        image=POSTGRES_IMAGE,
+        service_name="blockscout-postgres",
+        user=POSTGRES_USER,
+        password=POSTGRES_PASSWORD,
+        database=POSTGRES_DB,
+        extra_configs=["max_connections=1000"],
+        persistent=True
+    )
+    return "postgresql://{user}:{password}@{hostname}:{port}/{database}".format(
+        user=POSTGRES_USER,
+        password=POSTGRES_PASSWORD,
+        hostname=postgres_output.service.hostname,
+        port=postgres_output.port.number,
+        database=POSTGRES_DB
+    )
 
 
 def start_blockscout_backend(plan, rpc_http_url, rpc_ws_url, postgres_url):
