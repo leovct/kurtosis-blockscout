@@ -3,14 +3,18 @@ postgres = import_module("github.com/kurtosis-tech/postgres-package/main.star")
 
 def run(
     plan,
+    # RPC
     rpc_http_url,
     rpc_ws_url="",
+    # Postgres
     postgres_image="postgres:14-alpine",
     postgres_user="blockscout",
     postgres_password="password",
     postgres_db="blockscout",
 ):
-    postgres_url = start_postgres(plan, postgres_image, postgres_user, postgres_password, postgres_db)
+    postgres_url = start_postgres(
+        plan, postgres_image, postgres_user, postgres_password, postgres_db
+    )
     blockscout_backend_host = start_blockscout_backend(
         plan, rpc_http_url, rpc_ws_url, postgres_url
     )
