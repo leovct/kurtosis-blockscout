@@ -27,9 +27,9 @@ jobs:
 
       - name: Create the devnet configuration file
         run: |
-          echo "rpc_http_url: http://host.docker.internal:8545" > config.yaml
+          echo "rpc_http_url: http://host.docker.internal:8545" > ./config.yaml
       - name: Deploy devnet
         uses: kurtosis-tech/kurtosis-github-action@v1
         with:
           path: .
-          args-file: config.yaml
+          args: ./config.yaml
