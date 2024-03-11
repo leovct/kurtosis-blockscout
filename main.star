@@ -1,14 +1,17 @@
 postgres = import_module("github.com/kurtosis-tech/postgres-package/main.star")
 
-POSTGRES_IMAGE = "postgres:14-alpine"
-POSTGRES_USER = "blockscout"
-POSTGRES_PASSWORD = "password"
-POSTGRES_DB = "blockscout"
 
-
-def run(plan, rpc_http_url, rpc_ws_url=""):
-    postgres_url = start_postgres(plan)
-    backend_host = start_blockscout_backend(
+def run(
+    plan,
+    rpc_http_url,
+    rpc_ws_url="",
+    postgres_image="postgres:14-alpine",
+    postgres_user="blockscout",
+    postgres_password="password",
+    postgres_db="blockscout",
+):
+    postgres_url = start_postgres(plan, postgres_image, postgres_user, postgres_password, postgres_db)
+    blockscout_backend_host = start_blockscout_backend(
         plan, rpc_http_url, rpc_ws_url, postgres_url
     )
 
@@ -17,26 +20,26 @@ def run(plan, rpc_http_url, rpc_ws_url=""):
     # start_blockscout_sig_provider(plan)
     # start_blockscout_sc_verifier(plan)
 
-    start_blockscout_frontend(plan, backend_host, rpc_http_url)
+    start_blockscout_frontend(plan, blockscout_backend_host, rpc_http_url)
 
 
-def start_postgres(plan):
-    postgres_output = postgres.run(
+def start_postgres(plan, postgres_image, postgres_user, postgres_password, postgres_db):
+    output = postgres.run(
         plan,
-        image=POSTGRES_IMAGE,
+        image=postgres_image,
         service_name="blockscout-postgres",
-        user=POSTGRES_USER,
-        password=POSTGRES_PASSWORD,
-        database=POSTGRES_DB,
+        user=postgres_user,
+        password=postgres_password,
+        database=postgres_db,
         extra_configs=["max_connections=1000"],
         persistent=True,
     )
     return "postgresql://{user}:{password}@{hostname}:{port}/{database}".format(
-        user=POSTGRES_USER,
-        password=POSTGRES_PASSWORD,
-        hostname=postgres_output.service.hostname,
-        port=postgres_output.port.number,
-        database=POSTGRES_DB,
+        user=postgres_user,
+        password=postgres_password,
+        hostname=output.service.hostname,
+        port=output.port.number,
+        database=postgres_db,
     )
 
 
@@ -53,12 +56,12 @@ def start_blockscout_backend(plan, rpc_http_url, rpc_ws_url, postgres_url):
                 "BLOCKSCOUT_HOST": "0.0.0.0",
                 "BLOCKSCOUT_PROTOCOL": "http",
                 "DATABASE_URL": postgres_url,
-                "ETHEREUM_JSONRPC_VARIANT": "erigon",
+                "ETHEREUM_JSONRPC_VARIANT": "geth",
                 "ETHEREUM_JSONRPC_HTTP_URL": rpc_http_url,
                 "ETHEREUM_JSONRPC_TRACE_URL": rpc_http_url,
                 "ETHEREUM_JSONRPC_WS_URL": rpc_ws_url,
-                "CHAIN_TYPE": "polygon_zkevm",
-                "CHAIN_ID": "1",
+                "CHAIN_TYPE": "geth",
+                "CHAIN_ID": "1337",
                 "ECTO_USE_SSL": "false",
             },
             entrypoint=["/bin/sh", "-c"],
@@ -118,10 +121,13 @@ def start_blockscout_frontend(plan, backend_host, rpc_http_url):
                 # https://docs.blockscout.com/for-developers/information-and-settings/env-variables/frontend-common-envs
                 "NEXT_PUBLIC_API_HOST": backend_host,
                 "NEXT_PUBLIC_API_PORT": "4000",
-                "NEXT_PUBLIC_NETWORK_NAME": "(TEST) Polygon zkEVM",
-                "NEXT_PUBLIC_NETWORK_ID": "1",
+                "NEXT_PUBLIC_NETWORK_NAME": "Local Test Network",
+                "NEXT_PUBLIC_NETWORK_ID": "1337",
                 "NEXT_PUBLIC_NETWORK_RPC_URL": rpc_http_url,
                 "NEXT_PUBLIC_APP_HOST": "0.0.0.0",
+                # Remove ads
+                "NEXT_PUBLIC_AD_BANNER_PROVIDER": "none",
+                "NEXT_PUBLIC_AD_TEXT_PROVIDER": "none",
             },
         ),
     )
