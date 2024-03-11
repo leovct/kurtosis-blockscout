@@ -15,6 +15,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Get the address assigned to the en0 network interface
+        run: ipconfig getifaddr en0
       - name: Deploy devnet
         uses: kurtosis-tech/kurtosis-github-action@v1
         with:
