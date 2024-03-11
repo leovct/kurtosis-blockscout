@@ -15,7 +15,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install Geth
+        run: |
+          sudo add-apt-repository ppa:ethereum/ethereum
+          sudo apt-get update
+          sudo apt-get install ethereum
+          geth --version
+      - name: Run geth in the background
+        run: nohup geth --http --http.addr="host.docker.internal" --http.port="8545" &
+
+      - name: Create the devnet configuration file
+        run: |
+          echo "rpc_http_url: http://host.docker.internal:8545" > ./config.yaml
       - name: Deploy devnet
         uses: kurtosis-tech/kurtosis-github-action@v1
         with:
           path: .
+          args: ./config.yaml
