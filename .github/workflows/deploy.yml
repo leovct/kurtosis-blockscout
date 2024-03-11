@@ -16,7 +16,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Get the address assigned to the en0 network interface
-        run: ifconfig en0 | grep inet | awk '$1=="inet" {print $2}'| tr -d '\n'
+        run: |
+          echo First try
+          ifconfig
+
+          echo Second try
+          ifconfig en0 | grep inet | awk '$1=="inet" {print $2}'| tr -d '\n'
       - name: Deploy devnet
         uses: kurtosis-tech/kurtosis-github-action@v1
         with:
