@@ -6,6 +6,14 @@ def run(
     # RPC
     rpc_http_url,
     rpc_ws_url="",
+    # Network
+    network_name="Test Network",
+    network_id="1337",
+    chain_type="ethereum",
+    client_type="geth",
+    # Blockscout
+    blockscout_backend_image="blockscout/blockscout:latest",
+    blockscout_frontend_image="ghcr.io/blockscout/frontend:latest",
     # Postgres
     postgres_image="postgres:14-alpine",
     postgres_user="blockscout",
@@ -15,16 +23,28 @@ def run(
     postgres_url = start_postgres(
         plan, postgres_image, postgres_user, postgres_password, postgres_db
     )
+
     blockscout_backend_host = start_blockscout_backend(
-        plan, rpc_http_url, rpc_ws_url, postgres_url
+        plan,
+        blockscout_backend_image,
+        network_id,
+        chain_type,
+        client_type,
+        rpc_http_url,
+        rpc_ws_url,
+        postgres_url,
     )
 
     # TODO: Start blockscout microservices
-    # start_blockscout_sc_visualizer(plan)
-    # start_blockscout_sig_provider(plan)
-    # start_blockscout_sc_verifier(plan)
 
-    start_blockscout_frontend(plan, blockscout_backend_host, rpc_http_url)
+    start_blockscout_frontend(
+        plan,
+        blockscout_frontend_image,
+        blockscout_backend_host,
+        network_name,
+        network_id,
+        rpc_http_url,
+    )
 
 
 def start_postgres(plan, postgres_image, postgres_user, postgres_password, postgres_db):
@@ -47,25 +67,41 @@ def start_postgres(plan, postgres_image, postgres_user, postgres_password, postg
     )
 
 
-def start_blockscout_backend(plan, rpc_http_url, rpc_ws_url, postgres_url):
+def start_blockscout_backend(
+    plan,
+    blockscout_backend_image,
+    network_id,
+    chain_type,
+    client_type,
+    rpc_http_url,
+    rpc_ws_url,
+    postgres_url,
+):
     backend = plan.add_service(
         name="blockscout-backend",
         config=ServiceConfig(
-            image="blockscout/blockscout:latest",
+            image=blockscout_backend_image,
             ports={
                 "api": PortSpec(4000, application_protocol="http"),
             },
             env_vars={
-                # https://docs.blockscout.com/for-developers/information-and-settings/env-variables
+                ## Blockscout Backend
+                # Expose backend
                 "BLOCKSCOUT_HOST": "0.0.0.0",
+                # Use http instead of https.
                 "BLOCKSCOUT_PROTOCOL": "http",
+                ## Database
                 "DATABASE_URL": postgres_url,
-                "ETHEREUM_JSONRPC_VARIANT": "geth",
+                ## RPC
+                # The name of the client the node is running
+                "ETHEREUM_JSONRPC_VARIANT": client_type,
+                # The model of data
+                "CHAIN_TYPE": chain_type,
+                "CHAIN_ID": network_id,
                 "ETHEREUM_JSONRPC_HTTP_URL": rpc_http_url,
                 "ETHEREUM_JSONRPC_TRACE_URL": rpc_http_url,
                 "ETHEREUM_JSONRPC_WS_URL": rpc_ws_url,
-                "CHAIN_TYPE": "geth",
-                "CHAIN_ID": "1337",
+                # Disable SSL
                 "ECTO_USE_SSL": "false",
             },
             entrypoint=["/bin/sh", "-c"],
@@ -75,6 +111,40 @@ def start_blockscout_backend(plan, rpc_http_url, rpc_ws_url, postgres_url):
         ),
     )
     return backend.ip_address
+
+
+def start_blockscout_frontend(
+    plan,
+    blockscout_frontend_image,
+    backend_host,
+    network_name,
+    network_id,
+    rpc_http_url,
+):
+    plan.add_service(
+        name="blockscout-frontend",
+        config=ServiceConfig(
+            image=blockscout_frontend_image,
+            ports={
+                "frontend": PortSpec(3000, application_protocol="http"),
+            },
+            env_vars={
+                ## Backend API
+                "NEXT_PUBLIC_API_HOST": backend_host,
+                ## Frontend
+                # Expose frontend
+                "NEXT_PUBLIC_APP_HOST": "0.0.0.0",
+                ## Network
+                "NEXT_PUBLIC_NETWORK_NAME": network_name,
+                "NEXT_PUBLIC_NETWORK_ID": network_id,
+                "NEXT_PUBLIC_NETWORK_RPC_URL": rpc_http_url,
+                ## Ad
+                # Remove ads
+                "NEXT_PUBLIC_AD_BANNER_PROVIDER": "none",
+                "NEXT_PUBLIC_AD_TEXT_PROVIDER": "none",
+            },
+        ),
+    )
 
 
 def start_blockscout_sc_visualizer(plan):
@@ -109,29 +179,5 @@ def start_blockscout_sc_verifier(plan):
             # ports={
             #    "sc-verifier": PortSpec(8082, application_protocol="http"),
             # },
-        ),
-    )
-
-
-def start_blockscout_frontend(plan, backend_host, rpc_http_url):
-    plan.add_service(
-        name="blockscout-frontend",
-        config=ServiceConfig(
-            image="ghcr.io/blockscout/frontend:latest",
-            ports={
-                "frontend": PortSpec(3000, application_protocol="http"),
-            },
-            env_vars={
-                # https://docs.blockscout.com/for-developers/information-and-settings/env-variables/frontend-common-envs
-                "NEXT_PUBLIC_API_HOST": backend_host,
-                "NEXT_PUBLIC_API_PORT": "4000",
-                "NEXT_PUBLIC_NETWORK_NAME": "Local Test Network",
-                "NEXT_PUBLIC_NETWORK_ID": "1337",
-                "NEXT_PUBLIC_NETWORK_RPC_URL": rpc_http_url,
-                "NEXT_PUBLIC_APP_HOST": "0.0.0.0",
-                # Remove ads
-                "NEXT_PUBLIC_AD_BANNER_PROVIDER": "none",
-                "NEXT_PUBLIC_AD_TEXT_PROVIDER": "none",
-            },
         ),
     )
